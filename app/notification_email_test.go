@@ -826,14 +826,14 @@ func TestLandingLinkPermalink(t *testing.T) {
 	require.Contains(t, body, teamURL+"/pl/"+post.Id, fmt.Sprintf("Expected email text '%s'. Got %s", teamURL, body))
 }
 
-func TestMarkdownStripping(t *testing.T) {
+func TestMarkdownLinksRender(t *testing.T) {
 	th := SetupWithStoreMock(t)
 	defer th.TearDown()
 
 	recipient := &model.User{}
 	post := &model.Post{
 		Id:      "Test_id",
-		Message: "This is [Duck Duck Go](https://duckduckgo.com)",
+		Message: "This is [Mattermost](https://mattermost.com)",
 	}
 	channel := &model.Channel{
 		DisplayName: "ChannelName",
@@ -852,6 +852,38 @@ func TestMarkdownStripping(t *testing.T) {
 	storeMock.On("Team").Return(&teamStoreMock)
 
 	body, err := th.App.getNotificationEmailBody(recipient, post, channel, channelName, senderName, teamName, teamURL, emailNotificationContentsType, true, translateFunc, "user-avatar.png")
+	expect := "This is <a href=\"https://mattermost.com\">Mattermost</a>"
 	require.NoError(t, err)
-	require.Contains(t, body, "This is <a href=\"https://duckduckgo.com\">Duck Duck Go</a>", fmt.Sprintf("Expected email text '%s'. Got %s", "This is <a href=\"https://duckduckgo.com\">Duck Duck Go</a>", body))
+	require.Contains(t, body, expect, fmt.Sprintf("Expected email text '%s'. Got %s", expect, body))
+}
+
+func TestMarkdownBoldRender(t *testing.T) {
+	th := SetupWithStoreMock(t)
+	defer th.TearDown()
+
+	recipient := &model.User{}
+	post := &model.Post{
+		Id:      "Test_id",
+		Message: "This is **Mattermost**",
+	}
+	channel := &model.Channel{
+		DisplayName: "ChannelName",
+		Type:        model.ChannelTypeOpen,
+	}
+	channelName := "ChannelName"
+	senderName := "sender"
+	teamName := "testteam"
+	teamURL := "http://localhost:8065/landing#/testteam"
+	emailNotificationContentsType := model.EmailNotificationContentsFull
+	translateFunc := i18n.GetUserTranslations("en")
+
+	storeMock := th.App.Srv().Store.(*mocks.Store)
+	teamStoreMock := mocks.TeamStore{}
+	teamStoreMock.On("GetByName", "testteam").Return(&model.Team{Name: "testteam"}, nil)
+	storeMock.On("Team").Return(&teamStoreMock)
+
+	body, err := th.App.getNotificationEmailBody(recipient, post, channel, channelName, senderName, teamName, teamURL, emailNotificationContentsType, true, translateFunc, "user-avatar.png")
+	expect := "This is <b>Mattermost</b>"
+	require.NoError(t, err)
+	require.Contains(t, body, expect, fmt.Sprintf("Expected email text '%s'. Got %s", expect, body))
 }
