@@ -833,7 +833,7 @@ func TestMarkdownStripping(t *testing.T) {
 	recipient := &model.User{}
 	post := &model.Post{
 		Id:      "Test_id",
-		Message: "This is the **message**",
+		Message: "This is [Duck Duck Go](https://duckduckgo.com)",
 	}
 	channel := &model.Channel{
 		DisplayName: "ChannelName",
@@ -853,5 +853,5 @@ func TestMarkdownStripping(t *testing.T) {
 
 	body, err := th.App.getNotificationEmailBody(recipient, post, channel, channelName, senderName, teamName, teamURL, emailNotificationContentsType, true, translateFunc, "user-avatar.png")
 	require.NoError(t, err)
-	require.Contains(t, body, "This is the message", fmt.Sprintf("Expected email text '%s'. Got %s", "This is the message", body))
+	require.Contains(t, body, "This is <a href=\"https://duckduckgo.com\">Duck Duck Go</a>", fmt.Sprintf("Expected email text '%s'. Got %s", "This is <a href=\"https://duckduckgo.com\">Duck Duck Go</a>", body))
 }

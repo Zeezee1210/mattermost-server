@@ -14,8 +14,8 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
+	"github.com/mattermost/mattermost-server/v6/shared/markdown"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
-	"github.com/mattermost/mattermost-server/v6/utils"
 	"github.com/pkg/errors"
 )
 
@@ -202,7 +202,9 @@ func (a *App) getNotificationEmailBody(recipient *model.User, post *model.Post, 
 	if emailNotificationContentsType == model.EmailNotificationContentsFull {
 		postMessage := a.GetMessageForNotification(post, translateFunc)
 		postMessage = html.EscapeString(postMessage)
-		postMessage, _ = utils.StripMarkdown(postMessage)
+		// postMessage, _ = utils.StripMarkdown(postMessage)
+		postMessage = markdown.RenderHTML(postMessage)
+		fmt.Println(postMessage)
 		normalizedPostMessage, err := a.generateHyperlinkForChannels(postMessage, teamName, landingURL)
 		if err != nil {
 			mlog.Warn("Encountered error while generating hyperlink for channels", mlog.String("team_name", teamName), mlog.Err(err))
