@@ -14,9 +14,9 @@ import (
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/shared/i18n"
-	"github.com/mattermost/mattermost-server/v6/shared/markdown"
 	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 	"github.com/pkg/errors"
+	"github.com/yuin/goldmark"
 )
 
 func (a *App) sendNotificationEmail(notification *PostNotification, user *model.User, team *model.Team, senderProfileImage []byte) error {
@@ -200,13 +200,18 @@ func (a *App) getNotificationEmailBody(recipient *model.User, post *model.Post, 
 	}
 
 	if emailNotificationContentsType == model.EmailNotificationContentsFull {
+		md := goldmark.New()
+		var buf bytes.Buffer
 		postMessage := a.GetMessageForNotification(post, translateFunc)
 		postMessage = html.EscapeString(postMessage)
-		postMessage = markdown.RenderHTML(postMessage)
-		normalizedPostMessage, err := a.generateHyperlinkForChannels(postMessage, teamName, landingURL)
+		if err := md.Convert([]byte(postMessage), &buf); err != nil {
+			return "", err
+		}
+		htmlPostMessage := buf.String()
+		normalizedPostMessage, err := a.generateHyperlinkForChannels(htmlPostMessage, teamName, landingURL)
 		if err != nil {
 			mlog.Warn("Encountered error while generating hyperlink for channels", mlog.String("team_name", teamName), mlog.Err(err))
-			normalizedPostMessage = postMessage
+			normalizedPostMessage = htmlPostMessage
 		}
 		pData.Message = template.HTML(normalizedPostMessage)
 		pData.Time = translateFunc("app.notification.body.dm.time", messageTime)

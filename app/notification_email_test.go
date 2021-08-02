@@ -857,7 +857,38 @@ func TestMarkdownLinksRender(t *testing.T) {
 	require.Contains(t, body, expect, fmt.Sprintf("Expected email text '%s'. Got %s", expect, body))
 }
 
-func TestMarkdownBoldRender(t *testing.T) {
+func TestMarkdownEmphasisRender(t *testing.T) {
+	th := SetupWithStoreMock(t)
+	defer th.TearDown()
+
+	recipient := &model.User{}
+	post := &model.Post{
+		Id:      "Test_id",
+		Message: "This is *Mattermost*",
+	}
+	channel := &model.Channel{
+		DisplayName: "ChannelName",
+		Type:        model.ChannelTypeOpen,
+	}
+	channelName := "ChannelName"
+	senderName := "sender"
+	teamName := "testteam"
+	teamURL := "http://localhost:8065/landing#/testteam"
+	emailNotificationContentsType := model.EmailNotificationContentsFull
+	translateFunc := i18n.GetUserTranslations("en")
+
+	storeMock := th.App.Srv().Store.(*mocks.Store)
+	teamStoreMock := mocks.TeamStore{}
+	teamStoreMock.On("GetByName", "testteam").Return(&model.Team{Name: "testteam"}, nil)
+	storeMock.On("Team").Return(&teamStoreMock)
+
+	body, err := th.App.getNotificationEmailBody(recipient, post, channel, channelName, senderName, teamName, teamURL, emailNotificationContentsType, true, translateFunc, "user-avatar.png")
+	expect := "This is <em>Mattermost</em>"
+	require.NoError(t, err)
+	require.Contains(t, body, expect, fmt.Sprintf("Expected email text '%s'. Got %s", expect, body))
+}
+
+func TestMarkdownStrongRender(t *testing.T) {
 	th := SetupWithStoreMock(t)
 	defer th.TearDown()
 
@@ -883,7 +914,7 @@ func TestMarkdownBoldRender(t *testing.T) {
 	storeMock.On("Team").Return(&teamStoreMock)
 
 	body, err := th.App.getNotificationEmailBody(recipient, post, channel, channelName, senderName, teamName, teamURL, emailNotificationContentsType, true, translateFunc, "user-avatar.png")
-	expect := "This is <b>Mattermost</b>"
+	expect := "This is <strong>Mattermost</strong>"
 	require.NoError(t, err)
 	require.Contains(t, body, expect, fmt.Sprintf("Expected email text '%s'. Got %s", expect, body))
 }
